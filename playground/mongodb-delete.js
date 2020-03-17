@@ -20,6 +20,7 @@ MongoClient.connect(url,{ useUnifiedTopology: true },(err,client)=>{
         console.log(JSON.stringify(res,undefined,2));
         client.close();
     },(err)=>{
+        client.close();
         console.log(`${err}`);
     })
 }) 
