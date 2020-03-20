@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 mongoose.Promise = global.Promise;
 
-const url = "mongodb://localhost/TodoApp";
+const url = process.env.MONGODB_URI ;
 mongoose
     .connect(url, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => {

@@ -7,7 +7,7 @@ const { todoModel } = require("../models/todos");
 
 const todos = [
     { _id: new ObjectID(), text: "todo1" },
-    { _id: new ObjectID(), text: "todo2" }
+    { _id: new ObjectID(), text: "todo2" , completed : true , completedAt : 483 }
 ];
 
 beforeEach(done => {
@@ -122,4 +122,36 @@ describe("GET /todos/:id",()=>{
         .end(done);
     })
 
+})
+
+
+describe("PATCH /todos/:id",()=>{
+
+    const updatedText = "text is changed";
+
+    it("should update the todo",(done)=>{
+        request(app)
+        .patch(`/todos/${todos[0]._id.toHexString()}`)
+        .send({text : updatedText , completed : true})
+        .expect(200)
+        .expect((res)=>{
+            expect(res.body.text).toBe(updatedText);
+            expect(res.body.completed).toBe(true);
+            expect(res.body.completedAt).toBeA('number');
+        })
+        .end(done);
+    })
+
+    it("should clear completedAt when completed is false",(done)=>{
+        request(app)
+        .patch(`/todos/${todos[1]._id.toHexString()}`)
+        .send({text : updatedText , completed : false})
+        .expect(200)
+        .expect((res)=>{
+            expect(res.body.text).toBe(updatedText);
+            expect(res.body.completed).toBe(false);
+            expect(res.body.completedAt).toNotExist();
+        })
+        .end(done);
+    })
 })
