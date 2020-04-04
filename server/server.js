@@ -1,6 +1,6 @@
-require('./config/config')
+require("./config/config");
 
-const _ = require('lodash');
+const _ = require("lodash");
 const express = require("express");
 const bodyParser = require("body-parser");
 const { ObjectID } = require("mongodb");
@@ -60,55 +60,75 @@ app.get("/todos/:id", (req, res) => {
         });
 });
 
-
-app.delete("/todos/:id",(req,res)=>{
+app.delete("/todos/:id", (req, res) => {
     const id = req.params.id;
 
     if (!ObjectID.isValid(id)) {
         return res.status(404).send();
     }
 
-    todoModel.findByIdAndRemove(id)
-    .then((todo)=>{
-        if(!todo){
-            return res.status(404).send("id not found");
-        }
-        res.status(200).send(todo);
-    })
-    .catch(()=>{
-        res.status(400).send();
-    })
-})
+    todoModel
+        .findByIdAndRemove(id)
+        .then(todo => {
+            if (!todo) {
+                return res.status(404).send("id not found");
+            }
+            res.status(200).send(todo);
+        })
+        .catch(() => {
+            res.status(400).send();
+        });
+});
 
-
-app.patch("/todos/:id",(req,res)=>{
+app.patch("/todos/:id", (req, res) => {
     const id = req.params.id;
 
     if (!ObjectID.isValid(id)) {
         return res.status(404).send();
     }
 
-    var body = _.pick(req.body,['text','completed']);
+    var body = _.pick(req.body, ["text", "completed"]);
 
-    if( _.isBoolean(body.completed) && body.completed ){
+    if (_.isBoolean(body.completed) && body.completed) {
         body.completedAt = new Date().getTime();
-    }else{
+    } else {
         body.completed = false;
         body.completedAt = null;
     }
 
-    todoModel.findByIdAndUpdate(id,{$set : body},{new : true})
-    .then((todo)=>{
-        if(!todo){
-            return res.status(404).send("id not found");
-        }
-        res.status(200).send(todo);
-    })
-    .catch(()=>{
-        res.status(400).send();
-    })
+    todoModel
+        .findByIdAndUpdate(id, { $set: body }, { new: true })
+        .then(todo => {
+            if (!todo) {
+                return res.status(404).send("id not found");
+            }
+            res.status(200).send(todo);
+        })
+        .catch(() => {
+            res.status(400).send();
+        });
+});
 
-})
+app.post("/users", (req, res) => {
+
+    var body = _.pick(req.body, ["email", "password"]);
+
+    var newUser = new userModel(body);
+
+    newUser
+        .save()
+        .then(() => {
+            console.log("user saved successful"); 
+            return newUser.generateAuthToken()
+        })
+        .then(( token )=>{
+            res.header('x-auth',token).send(newUser.toJSON());
+        })
+        .catch(err => {
+            console.log("error in saving user in '/users'");
+            res.status(400).send(err);
+        });
+});
 
 app.listen(port, () => {
     console.log(`server started on ${port}`);
@@ -117,4 +137,3 @@ app.listen(port, () => {
 module.exports = {
     app
 };
-
