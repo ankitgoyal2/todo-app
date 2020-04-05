@@ -4,7 +4,7 @@ mongoose.Promise = global.Promise;
 
 const url = process.env.MONGODB_URI ;
 mongoose
-    .connect(url, { useNewUrlParser: true, useUnifiedTopology: true })
+    .connect(url, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify : false, useCreateIndex : true})
     .then(() => {
         console.log("connect successful");
     })
