@@ -8,7 +8,7 @@ const { ObjectID } = require("mongodb");
 const { mongoose } = require("./db/mongoose.js");
 const { todoModel } = require("./models/todos");
 const { userModel } = require("./models/users");
-const {authenticate} = require('./middleware/authenticate');
+const { authenticate } = require("./middleware/authenticate");
 
 var app = express();
 const port = process.env.PORT;
@@ -18,14 +18,14 @@ app.use(bodyParser.json());
 app.post("/todos", (req, res) => {
     // console.log(req.body);
     var todo = new todoModel({
-        text: req.body.text
+        text: req.body.text,
     });
 
     todo.save().then(
-        doc => {
+        (doc) => {
             res.send(doc);
         },
-        err => {
+        (err) => {
             res.status(400).send(err);
         }
     );
@@ -34,11 +34,11 @@ app.post("/todos", (req, res) => {
 app.get("/todos", (req, res) => {
     todoModel
         .find()
-        .then(todos => {
+        .then((todos) => {
             // console.log(todos);
             res.send({ todos });
         })
-        .catch(e => res.sendStatus(400).send(e));
+        .catch((e) => res.sendStatus(400).send(e));
 });
 
 app.get("/todos/:id", (req, res) => {
@@ -50,13 +50,13 @@ app.get("/todos/:id", (req, res) => {
 
     todoModel
         .findById(id)
-        .then(todo => {
+        .then((todo) => {
             if (!todo) {
                 return res.status(400).send("id not found");
             }
             res.send(todo);
         })
-        .catch(e => {
+        .catch((e) => {
             res.status(400).send("id not found");
         });
 });
@@ -70,7 +70,7 @@ app.delete("/todos/:id", (req, res) => {
 
     todoModel
         .findByIdAndRemove(id)
-        .then(todo => {
+        .then((todo) => {
             if (!todo) {
                 return res.status(404).send("id not found");
             }
@@ -99,7 +99,7 @@ app.patch("/todos/:id", (req, res) => {
 
     todoModel
         .findByIdAndUpdate(id, { $set: body }, { new: true })
-        .then(todo => {
+        .then((todo) => {
             if (!todo) {
                 return res.status(404).send("id not found");
             }
@@ -111,7 +111,6 @@ app.patch("/todos/:id", (req, res) => {
 });
 
 app.post("/users", (req, res) => {
-
     var body = _.pick(req.body, ["email", "password"]);
 
     var newUser = new userModel(body);
@@ -119,28 +118,41 @@ app.post("/users", (req, res) => {
     newUser
         .save()
         .then(() => {
-            console.log("user saved successful"); 
-            return newUser.generateAuthToken()
+            console.log("user saved successful");
+            return newUser.generateAuthToken();
         })
-        .then(( token )=>{
-            res.header('x-auth',token).send(newUser.toJSON());
+        .then((token) => {
+            res.header("x-auth", token).send(newUser.toJSON());
         })
-        .catch(err => {
+        .catch((err) => {
             console.log("error in saving user in '/users'");
             res.status(400).send(err);
         });
 });
 
-
-
-app.get("/users/me",authenticate,(req,res)=>{
+app.get("/users/me", authenticate, (req, res) => {
     res.send(req.user);
-})
+});
+
+app.post("/users/login", (req, res) => {
+    var body = _.pick(req.body, ["email", "password"]);
+
+    userModel
+        .findByCredentials(body.email, body.password)
+        .then((user) => {
+            return user.generateAuthToken().then((token) => {
+                res.header("x-auth", token).send(user);
+            });
+        })
+        .catch((err) => {
+            res.status(400).send(err);
+        });
+});
 
 app.listen(port, () => {
     console.log(`server started on ${port}`);
 });
 
 module.exports = {
-    app
+    app,
 };
