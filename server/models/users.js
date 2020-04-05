@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
-const _ = require('lodash');
+const _ = require("lodash");
+const bcrypt = require("bcryptjs");
 
 const userSchema = new mongoose.Schema({
     email: {
@@ -24,22 +25,22 @@ const userSchema = new mongoose.Schema({
         {
             access: {
                 type: String,
-                required : true,
+                required: true,
             },
             token: {
                 type: String,
-                required : true,
+                required: true,
             },
         },
     ],
 });
 
-userSchema.methods.toJSON = function(){
+userSchema.methods.toJSON = function () {
     var user = this;
     var userObj = user.toObject();
 
-    return _.pick(userObj,['email' , 'password']);
-}
+    return _.pick(userObj, ["email", "password"]);
+};
 
 userSchema.methods.generateAuthToken = function () {
     let user = this;
@@ -47,21 +48,20 @@ userSchema.methods.generateAuthToken = function () {
     const token = jwt
         .sign({ _id: user._id.toHexString(), access: access }, "my secret key")
         .toString();
-    
-    user.tokens.push({access,token});
 
-    return user.save()
-        .then(()=>{
-            return token;
-        })
+    user.tokens.push({ access, token });
+
+    return user.save().then(() => {
+        return token;
+    });
 };
 
-userSchema.statics.findByToken = function(token){
+userSchema.statics.findByToken = function (token) {
     var User = this;
-    var decoded ;
-    
+    var decoded;
+
     try {
-        decoded = jwt.verify(token,"my secret key");
+        decoded = jwt.verify(token, "my secret key");
     } catch (error) {
         // return new Promise((resolve,reject)=>{
         //     reject();
@@ -70,14 +70,32 @@ userSchema.statics.findByToken = function(token){
     }
 
     return User.findOne({
-        "_id" : decoded._id,
-        "tokens.token" : token,
-        "tokens.access" : "auth"
-    })
+        _id: decoded._id,
+        "tokens.token": token,
+        "tokens.access": "auth",
+    });
+};
 
-}
+userSchema.pre("save", function (next) {
+    var user = this;
 
-
+    if (user.isModified("password")) {
+        bcrypt.genSalt(10)
+        .then((salt) => {
+            return bcrypt.hash(user.password,salt)
+        })
+        .then((hashedPassword)=>{
+            user.password = hashedPassword;
+            next();
+        })
+        .catch((err)=>{
+            console.log('some error occured before saving user in pre method',err);
+            next();
+        });
+    }else{
+        next();
+    }
+});
 
 var userModel = mongoose.model("users", userSchema);
 
